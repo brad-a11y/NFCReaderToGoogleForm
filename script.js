@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function submitToGoogleForm(serialNumber) {
         const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfqcU9LE0cvOXwF1lN_Ge-lLiAzQkC-KdsiTCafc7I4fhZajg/formResponse";
         const dateEntry = "entry.1741188331";
-        const serialNumberEntry = "entry.839396458";
+        const serialNumberEntry = "YPqjbf";
 
         const now = new Date();
         const formData = new FormData();
