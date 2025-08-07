@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const record = message.records[0]; // Process the first record
                 if (record) {
                     handleRecord(record);
+                    submitToGoogleForm(${serialNumber});
                 } else {
                     logMessage("Tag contains no NDEF records.", "error");
                 }
@@ -96,6 +97,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
             default:
                 logMessage(">> Tag contains a record that is not 'text' or 'url'.", "info");
+        }
+    }
+     async function submitToGoogleForm(serialNumber) {
+        // The URL for submitting responses, not the viewing URL.
+        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfqcU9LE0cvOXwF1lN_Ge-lLiAzQkC-KdsiTCafc7I4fhZajg/formResponse";
+        
+        // The 'entry' IDs for your form's questions.
+        // Found by inspecting the live form's HTML.
+        const dateEntry = "entry.1741188331";
+        const serialNumberEntry = "entry.1233076878";
+
+        const now = new Date();
+        const year = now.getFullYear();
+        // getMonth() is 0-indexed, so add 1. Pad with '0' for consistency.
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hour = String(now.getHours()).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
+
+        const formData = new FormData();
+        // Google Forms requires date and time parts to be sent separately for date-time fields.
+        formData.append(`${dateEntry}_year`, year);
+        formData.append(`${dateEntry}_month`, month);
+        formData.append(`${dateEntry}_day`, day);
+        formData.append(`${dateEntry}_hour`, hour);
+        formData.append(`${dateEntry}_minute`, minute);
+        formData.append(serialNumberEntry, serialNumber);
+
+        logMessage("Submitting data to Google Form...", "info");
+
+        try {
+            await fetch(formUrl, {
+                method: "POST",
+                body: formData,
+                mode: "no-cors" // Important: Prevents CORS errors as Google doesn't send the required headers.
+            });
+            logMessage("✅ Data submitted successfully!", "success");
+        } catch (error) {
+            logMessage(`❌ Failed to submit data: ${error}`, "error");
         }
     }
 
