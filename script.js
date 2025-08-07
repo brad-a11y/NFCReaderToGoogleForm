@@ -8,45 +8,49 @@ document.addEventListener("DOMContentLoaded", () => {
     let abortController;
     let scanInterval;
 
-    // Check for Web NFC availability
-    if (!('NDEFReader' in window)) {
-        logMessage("Web NFC is not supported on this browser.", "error");
-        scanButton.disabled = true;
-        return;
-    } else {
+    // --- Main Logic: Check for Web NFC Support ---
+    if ('NDEFReader' in window) {
+        // --- Path 1: Web NFC is SUPPORTED ---
         logMessage("Web NFC is supported! Ready to scan.", "success");
+        setupNfcReader();
+    } else {
+        // --- Path 2: Web NFC is NOT SUPPORTED (Mock Mode) ---
+        logMessage("Web NFC not supported. Switched to Mock Mode.", "info");
+        setupMockButton();
     }
 
-    scanButton.addEventListener('click', async () => {
-        logMessage("User clicked 'Start Scan'.", "info");
-        nfcValueInput.value = ""; // Clear previous value
-        
-        // Abort any previous scan
-        if (abortController) {
-            abortController.abort();
-        }
-        abortController = new AbortController();
-        
-        scanButton.disabled = true;
-        abortButton.disabled = false;
-        
-        // Start the scanning heartbeat
-        let dotCount = 1;
-        updateStatus("Scanning" + ".".repeat(dotCount));
-        statusElement.className = 'status-scanning';
-        scanInterval = setInterval(() => {
-            dotCount = (dotCount % 3) + 1;
+    /**
+     * Sets up all the event listeners for a browser that supports Web NFC.
+     */
+    function setupNfcReader() {
+        scanButton.addEventListener('click', async () => {
+            logMessage("User clicked 'Start Scan'.", "info");
+            nfcValueInput.value = ""; // Clear previous value
+            
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+            
+            scanButton.disabled = true;
+            abortButton.disabled = false;
+            
+            let dotCount = 1;
             updateStatus("Scanning" + ".".repeat(dotCount));
-        }, 500);
+            statusElement.className = 'status-scanning';
+            scanInterval = setInterval(() => {
+                dotCount = (dotCount % 3) + 1;
+                updateStatus("Scanning" + ".".repeat(dotCount));
+            }, 500);
 
-        try {
-            const reader = new NDEFReader();
-            await reader.scan({ signal: abortController.signal });
-            logMessage("✅ Scan started successfully! Bring a tag near the phone.", "scan");
+            try {
+                const reader = new NDEFReader();
+                await reader.scan({ signal: abortController.signal });
+                logMessage("✅ Scan started successfully! Bring a tag near the phone.", "scan");
 
-            reader.addEventListener("reading", ({ message, serialNumber }) => {
-                logMessage(`> Tag detected! Serial Number: ${serialNumber}`, "success");
-                nfcValueInput.value = `${serialNumber}`;
+                reader.addEventListener("reading", ({ message, serialNumber }) => {
+                    logMessage(`> Tag detected! Physical Serial #: ${serialNumber}`, "success");
+                    nfcValueInput.value = `${serialNumber}`;
 
                 resetScanState();
                 
@@ -54,75 +58,97 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (record) {
                     handleRecord(record);
                     submitToGoogleForm(`${serialNumber}`);
-                } else {
-                    logMessage("Tag contains no NDEF records.", "error");
-                }
-            });
+                    } else {
+                        logMessage("Tag contains no NDEF records.", "error");
+                    }
+                });
 
-            reader.addEventListener("error", (event) => {
-                logMessage("NFC Reader Error: " + event.message, "error");
+                reader.addEventListener("error", (event) => {
+                    logMessage("NFC Reader Error: " + event.message, "error");
+                    resetScanState();
+                });
+
+            } catch (error) {
+                logMessage(`Scan failed: ${error}`, "error");
                 resetScanState();
-            });
+            }
+        });
 
-        } catch (error) {
-            logMessage(`Scan failed: ${error}`, "error");
-            resetScanState();
-        }
-    });
+        abortButton.addEventListener('click', () => {
+            logMessage("User clicked 'Stop Scan'.", "info");
+            if (abortController) {
+                abortController.abort();
+                resetScanState();
+            }
+        });
+    }
 
-    abortButton.addEventListener('click', () => {
-        logMessage("User clicked 'Stop Scan'.", "info");
-        if (abortController) {
-            abortController.abort();
-            resetScanState();
-        }
-    });
+    /**
+     * Sets up a mock button for browsers that do not support Web NFC.
+     */
+    function setupMockButton() {
+        scanButton.textContent = "Run Mock Scan";
+        scanButton.addEventListener('click', () => {
+            logMessage("User clicked 'Run Mock Scan'.", "info");
 
+            // Generate a fake serial number
+            const mockSerialNumber = `MOCK-${Date.now()}`;
+            logMessage(`> Generated Mock Serial: ${mockSerialNumber}`, "success");
+            
+            // Create a mock NDEF record that looks like a real one
+            const mockRecord = {
+                recordType: "text",
+                mediaType: "text/plain",
+                id: null,
+                // The data must be encoded into a Uint8Array, just like the real API provides
+                data: new TextEncoder().encode(mockSerialNumber),
+                encoding: "utf-8"
+            };
+
+            // Call the same handler that the real reader uses
+            handleRecord(mockRecord);
+        });
+    }
+
+    /**
+     * Processes a received NDEF record (real or mock).
+     * This function is now the central point for handling data.
+     */
     function handleRecord(record) {
         logMessage(`>> Record Type: ${record.recordType}`);
         logMessage(`>> Media Type:  ${record.mediaType}`);
         
-        switch (record.recordType) {
-            case "text":
-                const textDecoder = new TextDecoder(record.encoding);
-                const text = textDecoder.decode(record.data);
-                logMessage(`>> Decoded Text: ${text}`, "success");
-                nfcValueInput.value = text;
-                break;
-            case "url":
-                const urlDecoder = new TextDecoder();
-                const url = urlDecoder.decode(record.data);
-                logMessage(`>> Decoded URL: ${url}`, "success");
-                nfcValueInput.value = url;
-                break;
-            default:
-                logMessage(">> Tag contains a record that is not 'text' or 'url'.", "info");
+        let value = null;
+
+        if (record.recordType === "text") {
+            const textDecoder = new TextDecoder(record.encoding);
+            value = textDecoder.decode(record.data);
+            logMessage(`>> Decoded Text: ${value}`, "success");
+        } else {
+            logMessage(">> Record is not a 'text' record. Cannot process.", "info");
+            return;
         }
-    }
-     async function submitToGoogleForm(serialNumber) {
-        // The URL for submitting responses, not the viewing URL.
-        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfqcU9LE0cvOXwF1lN_Ge-lLiAzQkC-KdsiTCafc7I4fhZajg/formResponse";
         
-        // The 'entry' IDs for your form's questions.
-        // Found by inspecting the live form's HTML.
+        nfcValueInput.value = value;
+        submitToGoogleForm(value);
+    }
+    
+    /**
+     * Submits the captured data to the specified Google Form.
+     * @param {string} serialNumber The value read from the NFC tag.
+     */
+    async function submitToGoogleForm(serialNumber) {
+        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfqcU9LE0cvOXwF1lN_Ge-lLiAzQkC-KdsiTCafc7I4fhZajg/formResponse";
         const dateEntry = "entry.1741188331";
         const serialNumberEntry = "entry.1233076878";
 
         const now = new Date();
-        const year = now.getFullYear();
-        // getMonth() is 0-indexed, so add 1. Pad with '0' for consistency.
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hour = String(now.getHours()).padStart(2, '0');
-        const minute = String(now.getMinutes()).padStart(2, '0');
-
         const formData = new FormData();
-        // Google Forms requires date and time parts to be sent separately for date-time fields.
-        formData.append(`${dateEntry}_year`, year);
-        formData.append(`${dateEntry}_month`, month);
-        formData.append(`${dateEntry}_day`, day);
-        formData.append(`${dateEntry}_hour`, hour);
-        formData.append(`${dateEntry}_minute`, minute);
+        formData.append(`${dateEntry}_year`, now.getFullYear());
+        formData.append(`${dateEntry}_month`, String(now.getMonth() + 1).padStart(2, '0'));
+        formData.append(`${dateEntry}_day`, String(now.getDate()).padStart(2, '0'));
+        formData.append(`${dateEntry}_hour`, String(now.getHours()).padStart(2, '0'));
+        formData.append(`${dateEntry}_minute`, String(now.getMinutes()).padStart(2, '0'));
         formData.append(serialNumberEntry, serialNumber);
 
         logMessage("Submitting data to Google Form...", "info");
@@ -131,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await fetch(formUrl, {
                 method: "POST",
                 body: formData,
-                mode: "no-cors" // Important: Prevents CORS errors as Google doesn't send the required headers.
+                mode: "no-cors"
             });
             logMessage("✅ Data submitted successfully!", "success");
         } catch (error) {
