@@ -152,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append(serialNumberEntry, serialNumber);
 
         logMessage("Submitting data to Google Form...", "info");
+        logMessage(`${serialNumberEntry}, ${serialNumber}`, "info");
 
         try {
             await fetch(formUrl, {
