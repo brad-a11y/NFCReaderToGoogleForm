@@ -46,14 +46,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             reader.addEventListener("reading", ({ message, serialNumber }) => {
                 logMessage(`> Tag detected! Serial Number: ${serialNumber}`, "success");
-                nfcValueInput.value = ${serialNumber};
+                nfcValueInput.value = `${serialNumber}`;
 
                 resetScanState();
                 
                 const record = message.records[0]; // Process the first record
                 if (record) {
                     handleRecord(record);
-                    submitToGoogleForm(${serialNumber});
+                    submitToGoogleForm(`${serialNumber}`);
                 } else {
                     logMessage("Tag contains no NDEF records.", "error");
                 }
