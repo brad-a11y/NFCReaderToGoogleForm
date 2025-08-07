@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC Reader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Web NFC Reader</h1>
+    <p>
+        Click the button below, then tap an NFC tag to your phone.
+        The data from the tag will appear in the form field.
+    </p>
+
+    <button id="scanButton">Scan NFC Tag</button>
+
+    <form id="nfcForm">
+        <label for="nfcValue">NFC Tag Value:</label>
+        <input type="text" id="nfcValue" name="nfcValue" placeholder="Data from NFC tag will appear here..." readonly>
+    </form>
+
+    <div id="log">
+        <p>Status: Ready</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
