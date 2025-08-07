@@ -1,74 +1,119 @@
 document.addEventListener("DOMContentLoaded", () => {
     const scanButton = document.getElementById('scanButton');
+    const abortButton = document.getElementById('abortButton');
     const nfcValueInput = document.getElementById('nfcValue');
     const logElement = document.getElementById('log');
+    const statusElement = document.getElementById('status');
 
-    // Check if Web NFC is available in the browser
+    let abortController;
+    let scanInterval;
+
+    // Check for Web NFC availability
     if (!('NDEFReader' in window)) {
         logMessage("Web NFC is not supported on this browser.", "error");
         scanButton.disabled = true;
         return;
+    } else {
+        logMessage("Web NFC is supported! Ready to scan.", "success");
     }
 
     scanButton.addEventListener('click', async () => {
-        logMessage("User clicked scan. Waiting for NFC tag...");
+        logMessage("User clicked 'Start Scan'.", "info");
         nfcValueInput.value = ""; // Clear previous value
+        
+        // Abort any previous scan
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+        
+        scanButton.disabled = true;
+        abortButton.disabled = false;
+        
+        // Start the scanning heartbeat
+        let dotCount = 1;
+        updateStatus("Scanning" + ".".repeat(dotCount));
+        statusElement.className = 'status-scanning';
+        scanInterval = setInterval(() => {
+            dotCount = (dotCount % 3) + 1;
+            updateStatus("Scanning" + ".".repeat(dotCount));
+        }, 500);
 
         try {
-            // NDEFReader is the interface to read NFC tags
             const reader = new NDEFReader();
-            
-            // The scan() method returns a Promise that resolves when a scan is started.
-            await reader.scan();
-            logMessage("✅ Scan started successfully!");
+            await reader.scan({ signal: abortController.signal });
+            logMessage("✅ Scan started successfully! Bring a tag near the phone.", "scan");
 
-            // Listen for the 'reading' event
             reader.addEventListener("reading", ({ message, serialNumber }) => {
-                logMessage(`> Tag detected! Serial Number: ${serialNumber}`);
-
-                // message.records is an array of NDEF records
-                for (const record of message.records) {
-                    logMessage(`>> Record Type: ${record.recordType}`);
-                    logMessage(`>> Media Type:  ${record.mediaType}`);
-                    logMessage(`>> Record ID:   ${record.id}`);
-
-                    // We'll focus on 'text' records, which are the most common for simple data.
-                    if (record.recordType === "text") {
-                        const textDecoder = new TextDecoder(record.encoding);
-                        const text = textDecoder.decode(record.data);
-                        logMessage(`>> Decoded Text: ${text}`);
-                        
-                        // Write the value to our form input
-                        nfcValueInput.value = text;
-                        
-                        // Optional: You could automatically submit the form here
-                        // document.getElementById('nfcForm').submit();
-
-                    } else {
-                        logMessage(">> This record is not a 'text' record, skipping.");
-                    }
+                logMessage(`> Tag detected! Serial Number: ${serialNumber}`, "success");
+                resetScanState();
+                
+                const record = message.records[0]; // Process the first record
+                if (record) {
+                    handleRecord(record);
+                } else {
+                    logMessage("Tag contains no NDEF records.", "error");
                 }
             });
 
-            // Listen for any errors that may occur during the scan
             reader.addEventListener("error", (event) => {
-                logMessage("Argh! An error occurred. " + event.message, "error");
+                logMessage("NFC Reader Error: " + event.message, "error");
+                resetScanState();
             });
 
         } catch (error) {
-            logMessage("Scan failed: " + error, "error");
+            logMessage(`Scan failed: ${error}`, "error");
+            resetScanState();
         }
     });
 
-    // Helper function to log messages to the screen
-    function logMessage(message, type = 'info') {
+    abortButton.addEventListener('click', () => {
+        logMessage("User clicked 'Stop Scan'.", "info");
+        if (abortController) {
+            abortController.abort();
+            resetScanState();
+        }
+    });
+
+    function handleRecord(record) {
+        logMessage(`>> Record Type: ${record.recordType}`);
+        logMessage(`>> Media Type:  ${record.mediaType}`);
+        
+        switch (record.recordType) {
+            case "text":
+                const textDecoder = new TextDecoder(record.encoding);
+                const text = textDecoder.decode(record.data);
+                logMessage(`>> Decoded Text: ${text}`, "success");
+                nfcValueInput.value = text;
+                break;
+            case "url":
+                const urlDecoder = new TextDecoder();
+                const url = urlDecoder.decode(record.data);
+                logMessage(`>> Decoded URL: ${url}`, "success");
+                nfcValueInput.value = url;
+                break;
+            default:
+                logMessage(">> Tag contains a record that is not 'text' or 'url'.", "info");
+        }
+    }
+
+    function resetScanState() {
+        clearInterval(scanInterval);
+        scanButton.disabled = false;
+        abortButton.disabled = true;
+        updateStatus("Status: Ready");
+        statusElement.className = 'status-ready';
+    }
+
+    function updateStatus(message) {
+        statusElement.innerHTML = `<p>${message}</p>`;
+    }
+
+    function logMessage(message, className = 'log-info') {
         const p = document.createElement('p');
         p.textContent = message;
-        if (type === 'error') {
-            p.style.color = 'red';
-        }
+        p.className = className;
         logElement.appendChild(p);
-        // Scroll to the bottom of the log
         logElement.scrollTop = logElement.scrollHeight;
     }
 });
