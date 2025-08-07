@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             reader.addEventListener("reading", ({ message, serialNumber }) => {
                 logMessage(`> Tag detected! Serial Number: ${serialNumber}`, "success");
-                nfcValueInput.value = serialNumber;
+                nfcValueInput.value = ${serialNumber};
 
                 resetScanState();
                 
