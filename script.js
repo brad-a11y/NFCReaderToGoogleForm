@@ -58,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (record) {
                     handleRecord(record);
                     submitToGoogleForm(`${serialNumber}`);
+                    submitToOneTeam(`{"taskId": "1","jobId": "${serialNumber}","hoursCompleted": 7,"finished": false}`);
                     } else {
                         logMessage("Tag contains no NDEF records.", "error");
                     }
@@ -137,6 +138,24 @@ document.addEventListener("DOMContentLoaded", () => {
      * Submits the captured data to the specified Google Form.
      * @param {string} serialNumber The value read from the NFC tag.
      */
+    async function submitToOneTeam(jsonPayloadString)(
+        const webhookUrl = "https://ot.innovation.dev.oneteam.services/ai/api/webhooks/workspaces/1111/flows/aMjpgc3NRW00rbh4VxVNO";
+
+        logMessage("Submitting data to OneTeam form...", "info");
+        logMessage(jsonPayloadString, "info");
+
+        try {
+            await fetch(webhookUrl, {
+                method: "POST",
+                body: jsonPayloadString,
+                mode: "no-cors"
+            });
+            logMessage("✅ Data submitted successfully!", "success");
+        } catch (error) {
+            logMessage(`❌ Failed to submit data: ${error}`, "error");
+        }
+    }
+                          
     async function submitToGoogleForm(serialNumber) {
         const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfqcU9LE0cvOXwF1lN_Ge-lLiAzQkC-KdsiTCafc7I4fhZajg/formResponse";
         const dateEntry = "entry.1741188331";
