@@ -179,7 +179,8 @@ document.addEventListener("DOMContentLoaded", () => {
             await fetch(formUrl, {
                 method: "POST",
                 body: formData,
-                mode: "no-cors"
+                mode: "no-cors",
+                authorization: "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiT1QiLCJ0eXBlIjoidGVuYW50IiwiaWF0IjoxNzUyNTY2MDIxLCJleHAiOjE3NjgxMTgwMjF9.aBiJXxOdYj0_ogQSCucV__yQSUiDMCWcxvIJi-9QllXor11vScQOCrD4AbEiXEASVv73bU2DuDHo2b7Es3p30HQJuLSJ58HKke2Rr8ZbNsojRud6JjLoPYmTyFEGCTWZeEr1xP7_TG8YUbCYmnV5DgHkH4TuM7vt0Szbiw7RlwScrzwD-PzYNXSyvfVVDLQDaNF_nvmeQ-o68F1tq88lsEhLImlYO8DBwLATlELzgErmo985IG91a5Z4ENSKXb0TRIp_jgSU6rdxCguSp3ExfY7bRGIdeOIj4wlZqHneURTZjpKZxyjiJO2e_mtDMAM9QoASBKjINmlLiBnOjrer2Q"
             });
             logMessage("✅ Data submitted successfully!", "success");
         } catch (error) {
