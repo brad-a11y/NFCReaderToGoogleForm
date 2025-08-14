@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * Submits the captured data to the specified Google Form.
      * @param {string} serialNumber The value read from the NFC tag.
      */
-    async function submitToOneTeam(jsonPayloadString)(
+    async function submitToOneTeam(jsonPayloadString){
         const webhookUrl = "https://ot.innovation.dev.oneteam.services/ai/api/webhooks/workspaces/1111/flows/aMjpgc3NRW00rbh4VxVNO";
 
         logMessage("Submitting data to OneTeam form...", "info");
