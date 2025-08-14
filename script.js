@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         nfcValueInput.value = value;
         submitToGoogleForm(value);
-        submitToOneTeam(JSON.stringify({"taskId": "1","jobId": serialNumber,"hoursCompleted": 7,"finished": false}));
+        submitToOneTeam(JSON.stringify({"taskId": "1","jobId": value,"hoursCompleted": 7,"finished": false}));
 
     }
     
