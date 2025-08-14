@@ -151,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await fetch(webhookUrl, {
                 method: "POST",
                 body: jsonPayloadString,
+                mode: 'no-cors',
                 headers: {
                     'Content-Type': 'application/json', // Indicate that the request body is JSON
                     'Authorization': `Bearer ${bearerToken}` // Include the Bearer Token in the Authorization header
