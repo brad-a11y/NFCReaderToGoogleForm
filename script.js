@@ -145,13 +145,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         logMessage("Submitting data to OneTeam form...", "info");
         logMessage(jsonPayloadString, "info");
+        const  bearerToken = "aFkBaYJ2kmrxX7bp.aNKuLw8e53Ccn8BJbQ02OJQg76f8bXlX";
 
         try {
             await fetch(webhookUrl, {
                 method: "POST",
                 body: jsonPayloadString,
                 mode: "no-cors",
-                authorization: "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiT1QiLCJ0eXBlIjoidGVuYW50IiwiaWF0IjoxNzUyNTY2MDIxLCJleHAiOjE3NjgxMTgwMjF9.aBiJXxOdYj0_ogQSCucV__yQSUiDMCWcxvIJi-9QllXor11vScQOCrD4AbEiXEASVv73bU2DuDHo2b7Es3p30HQJuLSJ58HKke2Rr8ZbNsojRud6JjLoPYmTyFEGCTWZeEr1xP7_TG8YUbCYmnV5DgHkH4TuM7vt0Szbiw7RlwScrzwD-PzYNXSyvfVVDLQDaNF_nvmeQ-o68F1tq88lsEhLImlYO8DBwLATlELzgErmo985IG91a5Z4ENSKXb0TRIp_jgSU6rdxCguSp3ExfY7bRGIdeOIj4wlZqHneURTZjpKZxyjiJO2e_mtDMAM9QoASBKjINmlLiBnOjrer2Q"   
+                headers: {
+                    'Content-Type': 'application/json', // Indicate that the request body is JSON
+                    'Authorization': `Bearer ${bearerToken}` // Include the Bearer Token in the Authorization header
+                }
             });
             logMessage("✅ Data submitted successfully!", "success");
         } catch (error) {
